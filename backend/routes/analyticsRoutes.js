@@ -92,13 +92,13 @@ router.get("/dashboard-stats", async (req, res) => {
 
   } catch (error) {
 
-    console.log(error);
+  console.log(error);
 
-    res.status(500).json({
-      success: false,
-      message: "Analytics Fetch Failed",
-    });
-  }
+  res.status(500).json({
+    success: false,
+    error: error.message,
+  });
+}
 });
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API =
-  "http://localhost:5000/api/recommendations";
+  "http://https://ai-cyber-guardian.onrender.com/api/recommendations";
 
 export const getRecommendations =
   async (recommendationData) => {

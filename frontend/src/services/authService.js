@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://localhost:5000/api/auth";
+const API = "http://https://ai-cyber-guardian.onrender.com/api/auth";
 
 export const signupUser = async (userData) => {
   const response = await axios.post(

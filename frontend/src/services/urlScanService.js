@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://localhost:5000/api/url";
+const API = "http://https://ai-cyber-guardian.onrender.com/api/url";
 
 export const scanURL = async (url) => {
 

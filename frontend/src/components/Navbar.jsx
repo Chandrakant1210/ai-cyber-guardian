@@ -1,7 +1,13 @@
 function Navbar() {
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const firstLetter =
+    user?.name?.charAt(0).toUpperCase() || "U";
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
     window.location.href = "/";
   };
@@ -78,9 +84,10 @@ function Navbar() {
             color: "black",
             fontWeight: "bold",
             fontSize: "18px",
+            boxShadow: "0 0 12px rgba(6,182,212,0.5)",
           }}
         >
-          CK
+          {firstLetter}
         </div>
 
         {/* LOGOUT BUTTON */}

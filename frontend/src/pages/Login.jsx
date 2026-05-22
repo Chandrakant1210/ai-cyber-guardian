@@ -17,22 +17,34 @@ function Login() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      const data = await loginUser(formData);
+  try {
 
-      localStorage.setItem("token", data.token);
+    const data = await loginUser(formData);
 
-      alert(data.message);
+    // SAVE TOKEN
+    localStorage.setItem(
+      "token",
+      data.token
+    );
 
-      navigate("/dashboard");
-    } catch (error) {
-      alert("Invalid Credentials");
-    }
-  };
+    // SAVE USER
+    localStorage.setItem(
+      "user",
+      JSON.stringify(data.user)
+    );
 
+    alert("Login Successful");
+
+    navigate("/dashboard");
+
+  } catch (error) {
+
+    alert("Invalid Credentials");
+  }
+};
   return (
     <div
       style={{

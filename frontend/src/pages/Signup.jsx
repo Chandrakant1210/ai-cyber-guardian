@@ -16,24 +16,34 @@ function Signup() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      const data = await signupUser(formData);
+  try {
 
-      alert(data.message);
+    const data = await signupUser(formData);
 
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-      });
-    } catch (error) {
-      alert("Signup Failed");
-    }
-  };
+    // SAVE TOKEN
+    localStorage.setItem(
+      "token",
+      data.token
+    );
 
+    // SAVE USER
+    localStorage.setItem(
+      "user",
+      JSON.stringify(data.user)
+    );
+
+    alert("Account Created Successfully");
+
+    window.location.href = "/dashboard";
+
+  } catch (error) {
+
+    alert("Signup Failed");
+  }
+};
   return (
     <div
       style={{

@@ -13,6 +13,9 @@ const recommendationRoutes =
     "./routes/recommendationRoutes"
   );
 
+
+  const darkwebRoutes = require("./routes/darkwebRoutes");
+
 const connectDB = require("./config/db");
 
 dotenv.config();
@@ -21,6 +24,9 @@ connectDB();
 
 const app = express();
 
+
+
+app.use("/api/darkweb", darkwebRoutes);
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);

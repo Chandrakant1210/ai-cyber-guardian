@@ -1,8 +1,55 @@
+import { useState } from "react";
+import axios from "axios";
 import DashboardLayout from "../layouts/DashboardLayout";
 
 function DarkWeb() {
+
+  const [email, setEmail] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  const [scanData, setScanData] = useState({
+    totalLeaks: 0,
+    mentions: 0,
+    risk: "SAFE",
+    accounts: [],
+  });
+
+  const handleScan = async () => {
+
+    if (!email) {
+      alert("Enter Email First");
+      return;
+    }
+
+    try {
+
+      setLoading(true);
+
+      const res = await axios.post(
+        "https://ai-cyber-guardian.onrender.com/api/darkweb/scan",
+        {
+          email,
+        }
+      );
+
+      setScanData(res.data);
+
+      setLoading(false);
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert("Dark Web Scan Failed");
+
+      setLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
+
       <h1
         style={{
           color: "#06b6d4",
@@ -37,6 +84,8 @@ function DarkWeb() {
           <input
             type="text"
             placeholder="Enter Email or Username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             style={{
               flex: 1,
               padding: "15px",
@@ -49,6 +98,7 @@ function DarkWeb() {
           />
 
           <button
+            onClick={handleScan}
             style={{
               background: "#06b6d4",
               color: "black",
@@ -59,7 +109,7 @@ function DarkWeb() {
               cursor: "pointer",
             }}
           >
-            Start Deep Scan
+            {loading ? "Scanning..." : "Start Deep Scan"}
           </button>
         </div>
       </div>
@@ -73,6 +123,8 @@ function DarkWeb() {
           marginBottom: "30px",
         }}
       >
+
+        {/* TOTAL LEAKS */}
         <div
           style={{
             background: "#1e293b",
@@ -83,12 +135,20 @@ function DarkWeb() {
           }}
         >
           <h2>Total Leaks</h2>
-          <h1 style={{ color: "#ef4444", fontSize: "50px" }}>
-            18
+
+          <h1
+            style={{
+              color: "#ef4444",
+              fontSize: "50px",
+            }}
+          >
+            {scanData.totalLeaks}
           </h1>
+
           <p>Critical Exposure</p>
         </div>
 
+        {/* MENTIONS */}
         <div
           style={{
             background: "#1e293b",
@@ -99,12 +159,20 @@ function DarkWeb() {
           }}
         >
           <h2>Dark Web Mentions</h2>
-          <h1 style={{ color: "#facc15", fontSize: "50px" }}>
-            9
+
+          <h1
+            style={{
+              color: "#facc15",
+              fontSize: "50px",
+            }}
+          >
+            {scanData.mentions}
           </h1>
+
           <p>Active Threat Sources</p>
         </div>
 
+        {/* RISK */}
         <div
           style={{
             background: "#1e293b",
@@ -115,14 +183,21 @@ function DarkWeb() {
           }}
         >
           <h2>Identity Risk</h2>
-          <h1 style={{ color: "#06b6d4", fontSize: "50px" }}>
-            HIGH
+
+          <h1
+            style={{
+              color: "#06b6d4",
+              fontSize: "50px",
+            }}
+          >
+            {scanData.risk}
           </h1>
+
           <p>AI Threat Prediction</p>
         </div>
       </div>
 
-      {/* COMPROMISED ACCOUNTS */}
+      {/* TABLE */}
       <div
         style={{
           background: "#111827",
@@ -161,47 +236,66 @@ function DarkWeb() {
           </thead>
 
           <tbody>
-            <tr>
-              <td style={{ padding: "15px" }}>LinkedIn</td>
-              <td style={{ padding: "15px" }}>
-                Email + Password
-              </td>
-              <td style={{ padding: "15px", color: "#ef4444" }}>
-                Critical
-              </td>
-              <td style={{ padding: "15px" }}>
-                Compromised
-              </td>
-            </tr>
 
-            <tr>
-              <td style={{ padding: "15px" }}>Facebook</td>
-              <td style={{ padding: "15px" }}>
-                Email
-              </td>
-              <td style={{ padding: "15px", color: "#facc15" }}>
-                Medium
-              </td>
-              <td style={{ padding: "15px" }}>
-                Exposed
-              </td>
-            </tr>
+            {scanData.accounts.length > 0 ? (
 
-            <tr>
-              <td style={{ padding: "15px" }}>Twitter/X</td>
-              <td style={{ padding: "15px" }}>
-                Username
-              </td>
-              <td style={{ padding: "15px", color: "#06b6d4" }}>
-                Low
-              </td>
-              <td style={{ padding: "15px" }}>
-                Monitored
-              </td>
-            </tr>
+              scanData.accounts.map((item, index) => (
+
+                <tr key={index}>
+
+                  <td style={{ padding: "15px" }}>
+                    {item.platform}
+                  </td>
+
+                  <td style={{ padding: "15px" }}>
+                    {item.exposure}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "15px",
+                      color:
+                        item.risk === "Critical"
+                          ? "#ef4444"
+                          : item.risk === "Medium"
+                          ? "#facc15"
+                          : "#06b6d4",
+                    }}
+                  >
+                    {item.risk}
+                  </td>
+
+                  <td style={{ padding: "15px" }}>
+                    {item.status}
+                  </td>
+
+                </tr>
+
+              ))
+
+            ) : (
+
+              <tr>
+
+                <td
+                  colSpan="4"
+                  style={{
+                    padding: "20px",
+                    textAlign: "center",
+                    color: "#94a3b8",
+                  }}
+                >
+                  No Data Available
+                </td>
+
+              </tr>
+
+            )}
+
           </tbody>
         </table>
       </div>
+
     </DashboardLayout>
   );
 }

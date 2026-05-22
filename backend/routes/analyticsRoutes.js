@@ -6,99 +6,61 @@ const ScanHistory = require(
 
 const router = express.Router();
 
-router.get("/dashboard-stats", async (req, res) => {
+router.get(
+  "/dashboard-stats",
 
-  try {
+  async (req, res) => {
 
-    // TOTAL SCANS
-    const totalScans =
-      await ScanHistory.countDocuments();
+    try {
 
-    // DANGEROUS
-    const dangerousCount =
-      await ScanHistory.countDocuments({
-        threatLevel: "DANGEROUS",
+      const totalScans =
+        await ScanHistory.countDocuments();
+
+      const dangerousCount =
+        await ScanHistory.countDocuments({
+          threatLevel: "DANGEROUS",
+        });
+
+      const criticalCount =
+        await ScanHistory.countDocuments({
+          threatLevel: "CRITICAL",
+        });
+
+      const suspiciousCount =
+        await ScanHistory.countDocuments({
+          threatLevel: "SUSPICIOUS",
+        });
+
+      const recentScans =
+        await ScanHistory.find()
+          .sort({ createdAt: -1 })
+          .limit(5);
+
+      res.json({
+        success: true,
+
+        analytics: {
+          totalScans,
+          dangerousCount,
+          criticalCount,
+          suspiciousCount,
+          recentScans,
+        },
       });
 
-    // CRITICAL
-    const criticalCount =
-      await ScanHistory.countDocuments({
-        threatLevel: "CRITICAL",
+    } catch (error) {
+
+      console.log(
+        "Analytics Error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        error: error.message,
       });
-
-    // SUSPICIOUS
-    const suspiciousCount =
-      await ScanHistory.countDocuments({
-        threatLevel: "SUSPICIOUS",
-      });
-
-    // SAFE
-    const safeCount =
-      await ScanHistory.countDocuments({
-        threatLevel: "SAFE",
-      });
-
-    // RECENT SCANS
-    const recentScans =
-      await ScanHistory.find()
-        .sort({ scannedAt: -1 })
-        .limit(5);
-
-    // CHART DATA
-    const chartData = [
-
-      {
-        name: "Safe",
-        value: safeCount,
-      },
-
-      {
-        name: "Suspicious",
-        value: suspiciousCount,
-      },
-
-      {
-        name: "Dangerous",
-        value: dangerousCount,
-      },
-
-      {
-        name: "Critical",
-        value: criticalCount,
-      },
-    ];
-
-    // RESPONSE
-    res.json({
-      success: true,
-
-      analytics: {
-
-        totalScans,
-
-        dangerousCount,
-
-        criticalCount,
-
-        suspiciousCount,
-
-        safeCount,
-
-        chartData,
-
-        recentScans,
-      },
-    });
-
-  } catch (error) {
-
-  console.log(error);
-
-  res.status(500).json({
-    success: false,
-    error: error.message,
-  });
-}
-});
+    }
+  }
+);
 
 module.exports = router;

@@ -13,20 +13,55 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* Protected Routes */}
         <Route
-  path="/dashboard"
-  element={
-    <ProtectedRoute>
-      <Dashboard />
-    </ProtectedRoute>
-  }
-/>
-        <Route path="/scanner" element={ <ProtectedRoute> <LeakScanner /></ProtectedRoute> } />
-        <Route path="/darkweb" element={ <ProtectedRoute> <DarkWeb /> </ProtectedRoute>} />
-        <Route path="/browser-monitor" element={ <ProtectedRoute> <BrowserMonitor /> </ProtectedRoute>} />
-        <Route path="/recommendations" element={ <ProtectedRoute> <Recommendations /> </ProtectedRoute>}  />
-      <Route path="/signup" element={ <ProtectedRoute> <Signup /> </ProtectedRoute>} />
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/scanner"
+          element={
+            <ProtectedRoute>
+              <LeakScanner />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/darkweb"
+          element={
+            <ProtectedRoute>
+              <DarkWeb />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/browser-monitor"
+          element={
+            <ProtectedRoute>
+              <BrowserMonitor />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recommendations"
+          element={
+            <ProtectedRoute>
+              <Recommendations />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

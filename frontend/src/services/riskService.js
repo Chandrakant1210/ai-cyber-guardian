@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://https://ai-cyber-guardian.onrender.com/api/risk";
+const API = "https://ai-cyber-guardian.onrender.com/api/risk";
 
 export const analyzeRisk = async (riskData) => {
 

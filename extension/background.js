@@ -18,7 +18,7 @@ chrome.tabs.onUpdated.addListener(
         // SEND URL TO BACKEND
         const response =
           await fetch(
-            "http://https://ai-cyber-guardian.onrender.com/api/url/scan-url",
+            "https://ai-cyber-guardian.onrender.com/api/url/scan-url",
 
             {
               method: "POST",

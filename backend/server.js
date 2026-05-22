@@ -26,7 +26,6 @@ const app = express();
 
 
 
-app.use("/api/darkweb", darkwebRoutes);
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
@@ -38,6 +37,8 @@ app.use(
   "/api/recommendations",
   recommendationRoutes
 );
+
+app.use("/api/darkweb", darkwebRoutes);
 
 app.get("/", (req, res) => {
   res.send("AI Cyber Guardian Backend Running");

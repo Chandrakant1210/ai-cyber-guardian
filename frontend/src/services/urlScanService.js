@@ -1,0 +1,13 @@
+import axios from "axios";
+
+const API = "http://localhost:5000/api/url";
+
+export const scanURL = async (url) => {
+
+  const response = await axios.post(
+    `${API}/scan-url`,
+    { url }
+  );
+
+  return response.data;
+};

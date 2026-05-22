@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #0f172a;
+}
+.nav-link {
+  text-decoration: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  transition: 0.3s;
+  background: #1e293b;
+}
+
+.nav-link:hover {
+  background: #06b6d4;
+  color: black;
+  transform: translateX(5px);
+}

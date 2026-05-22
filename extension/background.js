@@ -37,6 +37,16 @@ chrome.tabs.onUpdated.addListener(
         const data =
           await response.json();
 
+        // CHECK RESPONSE
+        if (!data.success) {
+
+          console.log(
+            "Threat Scan Failed"
+          );
+
+          return;
+        }
+
         const result =
           data.result;
 
@@ -45,13 +55,12 @@ chrome.tabs.onUpdated.addListener(
           result
         );
 
-        // SAVE LAST RESULT
+        // SAVE LATEST RESULT
         chrome.storage.local.set({
-          latestThreat:
-            result,
+          latestThreat: result,
         });
 
-        // REAL-TIME ALERT
+        // SHOW ALERT
         if (
           result.threatLevel ===
             "CRITICAL" ||
@@ -70,15 +79,17 @@ chrome.tabs.onUpdated.addListener(
               "⚠ Cyber Threat Detected",
 
             message:
-              `Dangerous website detected:
-              ${tab.url}`,
+              "Dangerous website detected: " +
+              tab.url,
+
+            priority: 2,
           });
         }
 
       } catch (error) {
 
         console.log(
-          "Background Scan Error",
+          "Background Scan Error:",
           error
         );
       }

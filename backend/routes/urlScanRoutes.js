@@ -11,7 +11,7 @@ router.post("/scan-url", async (req, res) => {
 
     const { url } = req.body;
 
-    // STEP 1 — Submit URL to VirusTotal
+    // STEP 1 — SUBMIT URL
     const vtResponse = await axios.post(
       "https://www.virustotal.com/api/v3/urls",
 
@@ -21,30 +21,36 @@ router.post("/scan-url", async (req, res) => {
 
       {
         headers: {
-          "x-apikey": process.env.VIRUSTOTAL_API_KEY,
+          "x-apikey":
+            process.env.VIRUSTOTAL_API_KEY,
+
           "Content-Type":
             "application/x-www-form-urlencoded",
         },
       }
     );
 
-    // GET ANALYSIS ID
     const analysisId =
       vtResponse.data.data.id;
 
-    // STEP 2 — FETCH ANALYSIS RESULT
-    const analysisResponse = await axios.get(
-      `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
-
-      {
-        headers: {
-          "x-apikey":
-            process.env.VIRUSTOTAL_API_KEY,
-        },
-      }
+    // WAIT FOR ANALYSIS
+    await new Promise((resolve) =>
+      setTimeout(resolve, 5000)
     );
 
-    // STATS
+    // STEP 2 — GET ANALYSIS
+    const analysisResponse =
+      await axios.get(
+        `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+
+        {
+          headers: {
+            "x-apikey":
+              process.env.VIRUSTOTAL_API_KEY,
+          },
+        }
+      );
+
     const stats =
       analysisResponse.data.data.attributes.stats;
 
@@ -58,43 +64,60 @@ router.post("/scan-url", async (req, res) => {
     let threatLevel = "SAFE";
 
     if (maliciousCount >= 5) {
+
       threatLevel = "CRITICAL";
+
     }
 
     else if (maliciousCount >= 1) {
+
       threatLevel = "DANGEROUS";
+
     }
 
     else if (suspiciousCount >= 1) {
+
       threatLevel = "SUSPICIOUS";
     }
 
-    // SAVE TO DATABASE
-    await ScanHistory.create({
-      url,
-      threatLevel,
-      maliciousCount,
-      suspiciousCount,
-    });
+    // SAVE TO DB
+    const savedScan =
+      await ScanHistory.create({
+
+        url,
+
+        threatLevel,
+
+        maliciousCount,
+
+        suspiciousCount,
+      });
+
+    console.log(
+      "Saved Scan:",
+      savedScan
+    );
 
     // RESPONSE
     res.json({
+
       success: true,
 
-      result: {
-        url,
-        threatLevel,
-        maliciousCount,
-        suspiciousCount,
-      },
+      result: savedScan,
     });
 
   } catch (error) {
 
-    console.log(error.response?.data || error.message);
+    console.log(
+      "VirusTotal Error:",
+      error.response?.data ||
+      error.message
+    );
 
     res.status(500).json({
+
       success: false,
+
       message: "URL Scan Failed",
     });
   }

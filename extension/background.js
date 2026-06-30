@@ -1,98 +1,176 @@
-chrome.tabs.onUpdated.addListener(
+chrome.runtime.onMessage.addListener(
 
-  async (tabId, changeInfo, tab) => {
+  async (
+    request,
+    sender,
+    sendResponse
+  ) => {
 
-    // PAGE FULLY LOADED
+    // ONLY SCAN REQUEST
     if (
-      changeInfo.status === "complete" &&
-      tab.url
+      request.action !==
+      "scanWebsite"
     ) {
+      return;
+    }
 
-      try {
+    try {
 
-        console.log(
-          "Scanning:",
-          tab.url
+      console.log(
+        "Scanning URL:",
+        request.url
+      );
+
+      // API REQUEST
+      const response =
+        await fetch(
+
+          "https://ai-cyber-guardian.onrender.com/api/url/scan-url",
+
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+
+              userEmail:
+                "chandrakantkumar1210@gmail.com",
+
+              url: request.url,
+
+              scanSource:
+                "Extension",
+            }),
+          }
         );
 
-        // SEND URL TO BACKEND
-        const response =
-          await fetch(
-            "https://ai-cyber-guardian.onrender.com/api/url/scan-url",
+      // CHECK RESPONSE
+      if (!response.ok) {
 
-            {
-              method: "POST",
+        sendResponse({
 
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
+          success: false,
 
-              body: JSON.stringify({
-                url: tab.url,
-              }),
-            }
-          );
-
-        const data =
-          await response.json();
-
-        // CHECK RESPONSE
-        if (!data.success) {
-
-          console.log(
-            "Threat Scan Failed"
-          );
-
-          return;
-        }
-
-        const result =
-          data.result;
-
-        console.log(
-          "Threat Result:",
-          result
-        );
-
-        // SAVE LATEST RESULT
-        chrome.storage.local.set({
-          latestThreat: result,
+          message:
+            "Backend Request Failed",
         });
 
-        // SHOW ALERT
-        if (
-          result.threatLevel ===
-            "CRITICAL" ||
-
-          result.threatLevel ===
-            "DANGEROUS"
-        ) {
-
-          chrome.notifications.create({
-
-            type: "basic",
-
-            iconUrl: "icon.png",
-
-            title:
-              "⚠ Cyber Threat Detected",
-
-            message:
-              "Dangerous website detected: " +
-              tab.url,
-
-            priority: 2,
-          });
-        }
-
-      } catch (error) {
-
-        console.log(
-          "Background Scan Error:",
-          error
-        );
+        return true;
       }
+
+      // JSON DATA
+      const data =
+        await response.json();
+
+      console.log(
+        "Backend Response:",
+        data
+      );
+
+      // FAILED
+      if (!data.success) {
+
+        sendResponse({
+
+          success: false,
+
+          message:
+            data.message ||
+            "Scan Failed",
+        });
+
+        return true;
+      }
+
+      // SAVE LATEST THREAT
+      await chrome.storage.local.set({
+
+        latestThreat:
+          data.result,
+      });
+
+      // GET OLD HISTORY
+      const storage =
+        await chrome.storage.local.get(
+          ["scanHistory"]
+        );
+
+      let history =
+        storage.scanHistory || [];
+
+      // ADD NEW RESULT
+      history.unshift(
+        data.result
+      );
+
+      // KEEP LAST 50
+      history =
+        history.slice(0, 50);
+
+      // SAVE HISTORY
+      await chrome.storage.local.set({
+
+        scanHistory:
+          history,
+      });
+
+      console.log(
+        "Threat Saved Successfully"
+      );
+
+      // SHOW NOTIFICATION
+      if (
+
+        data.result.threatLevel ===
+          "CRITICAL" ||
+
+        data.result.threatLevel ===
+          "DANGEROUS"
+
+      ) {
+
+        chrome.notifications.create({
+
+          type: "basic",
+
+          title:
+            "⚠ Cyber Threat Detected",
+
+          message:
+            "Dangerous website detected!",
+        });
+      }
+
+      // SUCCESS RESPONSE
+      sendResponse({
+
+        success: true,
+
+        result:
+          data.result,
+      });
+
+    } catch (error) {
+
+      console.log(
+        "BACKGROUND ERROR:",
+        error
+      );
+
+      sendResponse({
+
+        success: false,
+
+        message:
+          error.message ||
+          "Extension Error",
+      });
     }
+
+    return true;
   }
 );

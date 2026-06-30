@@ -30,12 +30,17 @@ function Login() {
       data.token
     );
 
-    // SAVE USER
-    localStorage.setItem(
-      "user",
-      JSON.stringify(data.user)
-    );
+  // SAVE USER
+localStorage.setItem(
+  "user",
+  JSON.stringify(data.user)
+);
 
+// SAVE USER EMAIL
+localStorage.setItem(
+  "userEmail",
+  data.user.email
+);
     alert("Login Successful");
 
     navigate("/dashboard");

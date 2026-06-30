@@ -3,74 +3,242 @@ const resultDiv =
     "result"
   );
 
-chrome.storage.local.get(
-  ["latestThreat"],
+const currentUrlText =
+  document.getElementById(
+    "currentUrl"
+  );
 
-  (data) => {
+const scanBtn =
+  document.getElementById(
+    "scanBtn"
+  );
 
-    const result =
-      data.latestThreat;
+let currentTabUrl = "";
 
-    if (!result) {
+// GET CURRENT TAB
+chrome.tabs.query(
 
-      resultDiv.innerHTML = `
-      
-      <p>
-        No scan data available.
-      </p>
-      
-      `;
+  {
+    active: true,
+    currentWindow: true,
+  },
+
+  (tabs) => {
+
+    // TAB CHECK
+    if (
+      !tabs ||
+      !tabs[0]
+    ) {
+
+      currentUrlText.innerHTML =
+
+        `
+        Cannot detect tab
+        `;
 
       return;
     }
 
-    let color = "#22c55e";
+    currentTabUrl =
+      tabs[0].url;
 
+    // BLOCK CHROME PAGES
     if (
-      result.threatLevel ===
-      "CRITICAL"
+
+      currentTabUrl.startsWith(
+        "chrome://"
+      ) ||
+
+      currentTabUrl.startsWith(
+        "chrome-extension://"
+      )
+
     ) {
 
-      color = "#ef4444";
+      currentUrlText.innerHTML =
+
+        `
+        <span style="color:red;">
+          Cannot scan browser internal pages
+        </span>
+        `;
+
+      scanBtn.disabled = true;
+
+      return;
     }
 
-    else if (
-      result.threatLevel ===
-      "DANGEROUS"
-    ) {
+    // SHOW URL
+    currentUrlText.innerHTML =
 
-      color = "#f97316";
+      `
+      <strong>Current Website:</strong>
+      <br/>
+      ${currentTabUrl}
+      `;
+  }
+);
+
+// BUTTON CLICK
+scanBtn.addEventListener(
+
+  "click",
+
+  () => {
+
+    // NO URL
+    if (!currentTabUrl) {
+
+      resultDiv.innerHTML =
+
+        `
+        <p style="color:red;">
+          Invalid Website
+        </p>
+        `;
+
+      return;
     }
 
-    else if (
-      result.threatLevel ===
-      "SUSPICIOUS"
-    ) {
+    // LOADING
+    resultDiv.innerHTML =
 
-      color = "#facc15";
-    }
+      `
+      <p style="color:#06b6d4;">
+        Scanning website...
+      </p>
+      `;
 
-    resultDiv.innerHTML = `
-    
-    <h2 style="color:${color}">
-      ${result.threatLevel}
-    </h2>
+    // SEND MESSAGE
+    chrome.runtime.sendMessage(
 
-    <p>
-      <strong>URL:</strong>
-      ${result.url}
-    </p>
+      {
+        action: "scanWebsite",
 
-    <p>
-      <strong>Malicious:</strong>
-      ${result.maliciousCount}
-    </p>
+        url: currentTabUrl,
+      },
 
-    <p>
-      <strong>Suspicious:</strong>
-      ${result.suspiciousCount}
-    </p>
+      (response) => {
 
-    `;
+        // EXTENSION ERROR
+        if (
+          chrome.runtime.lastError
+        ) {
+
+          resultDiv.innerHTML =
+
+            `
+            <p style="color:red;">
+              Extension Error
+            </p>
+            `;
+
+          console.log(
+            chrome.runtime.lastError
+          );
+
+          return;
+        }
+
+        // FAILED
+        if (
+
+          !response ||
+
+          !response.success
+
+        ) {
+
+          resultDiv.innerHTML =
+
+            `
+            <p style="color:red;">
+              ${response?.message || "Scan Failed"}
+            </p>
+            `;
+
+          return;
+        }
+
+        // RESULT
+        const result =
+          response.result;
+
+        // COLOR
+        let color = "#22c55e";
+
+        if (
+          result.threatLevel ===
+          "CRITICAL"
+        ) {
+
+          color = "#ef4444";
+        }
+
+        else if (
+          result.threatLevel ===
+          "DANGEROUS"
+        ) {
+
+          color = "#f97316";
+        }
+
+        else if (
+          result.threatLevel ===
+          "SUSPICIOUS"
+        ) {
+
+          color = "#facc15";
+        }
+
+        // UI
+        resultDiv.innerHTML =
+
+          `
+          <div
+            style="
+              background:#111827;
+              padding:15px;
+              border-radius:10px;
+              margin-top:15px;
+              color:white;
+            "
+          >
+
+            <h2
+              style="
+                color:${color};
+                margin-top:0;
+              "
+            >
+              ${result.threatLevel}
+            </h2>
+
+            <p>
+              <strong>URL:</strong>
+              <br/>
+              ${result.url}
+            </p>
+
+            <p>
+              <strong>Malicious:</strong>
+              ${result.maliciousCount}
+            </p>
+
+            <p>
+              <strong>Suspicious:</strong>
+              ${result.suspiciousCount}
+            </p>
+
+            <p>
+              <strong>Source:</strong>
+              ${result.scanSource}
+            </p>
+
+          </div>
+          `;
+      }
+    );
   }
 );

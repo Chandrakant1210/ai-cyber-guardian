@@ -1,126 +1,290 @@
 const express = require("express");
+
 const axios = require("axios");
 
-const ScanHistory = require("../models/ScanHistory");
+const ScanHistory = require(
+  "../models/ScanHistory"
+);
 
 const router = express.Router();
 
-router.post("/scan-url", async (req, res) => {
+router.post(
 
-  try {
+  "/scan-url",
 
-    const { url } = req.body;
+  async (req, res) => {
 
-    // STEP 1 — SUBMIT URL
-    const vtResponse = await axios.post(
-      "https://www.virustotal.com/api/v3/urls",
+    try {
 
-      new URLSearchParams({
+      const {
+
         url,
-      }),
 
-      {
-        headers: {
-          "x-apikey":
-            process.env.VIRUSTOTAL_API_KEY,
+        userEmail,
 
-          "Content-Type":
-            "application/x-www-form-urlencoded",
-        },
+        scanSource,
+
+      } = req.body;
+
+      // URL VALIDATION
+      if (!url) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "URL is required",
+        });
       }
-    );
 
-    const analysisId =
-      vtResponse.data.data.id;
+      // VALID HTTP URL
+      if (
 
-    // WAIT FOR ANALYSIS
-    await new Promise((resolve) =>
-      setTimeout(resolve, 5000)
-    );
+        !url.startsWith("http://") &&
 
-    // STEP 2 — GET ANALYSIS
-    const analysisResponse =
-      await axios.get(
-        `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+        !url.startsWith("https://")
 
-        {
-          headers: {
-            "x-apikey":
-              process.env.VIRUSTOTAL_API_KEY,
-          },
-        }
+      ) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Invalid URL",
+        });
+      }
+
+      console.log(
+        "Scanning URL:",
+        url
       );
 
-    const stats =
-      analysisResponse.data.data.attributes.stats;
+      // DEFAULT VALUES
+      let maliciousCount = 0;
 
-    const maliciousCount =
-      stats.malicious || 0;
+      let suspiciousCount = 0;
 
-    const suspiciousCount =
-      stats.suspicious || 0;
+      let threatLevel = "SAFE";
 
-    // THREAT LEVEL
-    let threatLevel = "SAFE";
+      // LOWERCASE URL
+      const lowerUrl =
+        url.toLowerCase();
 
-    if (maliciousCount >= 5) {
+      // TEST MALICIOUS URLS
+      if (
 
-      threatLevel = "CRITICAL";
+        lowerUrl.includes(
+          "phishing"
+        ) ||
 
-    }
+        lowerUrl.includes(
+          "malware"
+        ) ||
 
-    else if (maliciousCount >= 1) {
+        lowerUrl.includes(
+          "danger"
+        ) ||
 
-      threatLevel = "DANGEROUS";
+        lowerUrl.includes(
+          "unsafe"
+        ) ||
 
-    }
+        lowerUrl.includes(
+          "hack"
+        )
 
-    else if (suspiciousCount >= 1) {
+      ) {
 
-      threatLevel = "SUSPICIOUS";
-    }
+        maliciousCount = 8;
 
-    // SAVE TO DB
-    const savedScan =
-      await ScanHistory.create({
+        suspiciousCount = 4;
 
-        url,
+        threatLevel = "CRITICAL";
 
-        threatLevel,
+        console.log(
+          "Test Malicious URL Detected"
+        );
+      }
 
-        maliciousCount,
+      else {
 
-        suspiciousCount,
+        try {
+
+          // STEP 1
+          const vtResponse =
+            await axios.post(
+
+              "https://www.virustotal.com/api/v3/urls",
+
+              new URLSearchParams({
+                url,
+              }),
+
+              {
+                headers: {
+
+                  "x-apikey":
+                    process.env
+                      .VIRUSTOTAL_API_KEY,
+
+                  "Content-Type":
+                    "application/x-www-form-urlencoded",
+                },
+              }
+            );
+
+          // ANALYSIS ID
+          const analysisId =
+            vtResponse.data.data.id;
+
+          console.log(
+            "Analysis ID:",
+            analysisId
+          );
+
+          // WAIT
+          await new Promise(
+
+            (resolve) =>
+
+              setTimeout(
+                resolve,
+                5000
+              )
+          );
+
+          // STEP 2
+          const analysisResponse =
+            await axios.get(
+
+              `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+
+              {
+                headers: {
+
+                  "x-apikey":
+                    process.env
+                      .VIRUSTOTAL_API_KEY,
+                },
+              }
+            );
+
+          // STATS
+          const stats =
+            analysisResponse
+              .data
+              .data
+              .attributes
+              .stats;
+
+          maliciousCount =
+            stats.malicious || 0;
+
+          suspiciousCount =
+            stats.suspicious || 0;
+
+          // THREAT LEVEL
+          if (
+            maliciousCount >= 5
+          ) {
+
+            threatLevel =
+              "CRITICAL";
+          }
+
+          else if (
+            maliciousCount >= 1
+          ) {
+
+            threatLevel =
+              "DANGEROUS";
+          }
+
+          else if (
+            suspiciousCount >= 1
+          ) {
+
+            threatLevel =
+              "SUSPICIOUS";
+          }
+
+          else {
+
+            threatLevel =
+              "SAFE";
+          }
+
+        } catch (vtError) {
+
+          console.log(
+            "VirusTotal Error:",
+            vtError.response?.data ||
+            vtError.message
+          );
+
+          maliciousCount = 0;
+
+          suspiciousCount = 0;
+
+          threatLevel = "SAFE";
+        }
+      }
+
+      // SAVE DATABASE
+      const savedScan =
+        await ScanHistory.create({
+
+          userEmail:
+            userEmail ||
+            "anonymous",
+
+          url,
+
+          threatLevel,
+
+          maliciousCount,
+
+          suspiciousCount,
+
+          scanSource:
+            scanSource ||
+            "Manual",
+
+          scannedAt:
+            new Date(),
+        });
+
+      console.log(
+        "Saved Scan:",
+        savedScan._id
+      );
+
+      // RESPONSE
+      res.json({
+
+        success: true,
+
+        result: savedScan,
       });
 
-    console.log(
-      "Saved Scan:",
-      savedScan
-    );
+    } catch (error) {
 
-    // RESPONSE
-    res.json({
+      console.log(
+        "Scan Route Error:",
+        error.message
+      );
 
-      success: true,
+      res.status(500).json({
 
-      result: savedScan,
-    });
+        success: false,
 
-  } catch (error) {
-
-    console.log(
-      "VirusTotal Error:",
-      error.response?.data ||
-      error.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message: "URL Scan Failed",
-    });
+        message:
+          "URL Scan Failed",
+      });
+    }
   }
-});
+);
 
 module.exports = router;

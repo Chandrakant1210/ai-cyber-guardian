@@ -16,7 +16,8 @@
   ],
 
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "https://ai-cyber-guardian.onrender.com/*"
   ],
 
   "background": {

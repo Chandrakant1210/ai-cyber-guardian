@@ -6,34 +6,95 @@ import { scanURL } from "../services/urlScanService";
 
 function BrowserMonitor() {
 
-  const [url, setUrl] = useState("");
+  const [url, setUrl] =
+    useState("");
 
-  const [scanResult, setScanResult] = useState(null);
+  const [scanResult, setScanResult] =
+    useState(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
+  // SCAN URL
   const handleScan = async () => {
 
     if (!url) {
-      return alert("Enter URL");
+
+      alert("Enter URL");
+
+      return;
     }
 
     try {
 
       setLoading(true);
 
-      const data = await scanURL(url);
+      const response =
+        await scanURL(url);
 
-      setScanResult(data);
+      console.log(
+        "FULL RESPONSE:",
+        response
+      );
+
+      // SAFE RESULT
+      if (
+        response &&
+        response.result
+      ) {
+
+        setScanResult(
+          response.result
+        );
+
+      } else {
+
+        alert(
+          "Invalid API Response"
+        );
+      }
 
       setLoading(false);
 
     } catch (error) {
 
+      console.log(error);
+
       setLoading(false);
 
-      alert("URL Scan Failed");
+      alert(
+        "URL Scan Failed"
+      );
     }
+  };
+
+  // THREAT COLOR
+  const getThreatColor = (
+    level
+  ) => {
+
+    if (
+      level === "CRITICAL"
+    ) {
+
+      return "#ef4444";
+    }
+
+    if (
+      level === "DANGEROUS"
+    ) {
+
+      return "#f97316";
+    }
+
+    if (
+      level === "SUSPICIOUS"
+    ) {
+
+      return "#facc15";
+    }
+
+    return "#22c55e";
   };
 
   return (
@@ -43,14 +104,15 @@ function BrowserMonitor() {
       <h1
         style={{
           color: "#06b6d4",
-          fontSize: "35px",
+          fontSize: "40px",
           marginBottom: "25px",
+          fontWeight: "bold",
         }}
       >
         Real-Time URL Threat Scanner
       </h1>
 
-      {/* URL SCAN BOX */}
+      {/* URL BOX */}
       <div
         style={{
           background: "#111827",
@@ -61,7 +123,11 @@ function BrowserMonitor() {
         }}
       >
 
-        <h2 style={{ marginBottom: "20px" }}>
+        <h2
+          style={{
+            marginBottom: "20px",
+          }}
+        >
           Scan Website URL
         </h2>
 
@@ -69,21 +135,31 @@ function BrowserMonitor() {
           style={{
             display: "flex",
             gap: "15px",
-            flexWrap: "wrap",
           }}
         >
 
           <input
             type="text"
-            placeholder="Enter Website URL"
+
+            placeholder="Enter URL"
+
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+
+            onChange={(e) =>
+              setUrl(
+                e.target.value
+              )
+            }
+
             style={{
               flex: 1,
               padding: "15px",
-              background: "#1e293b",
-              border: "1px solid #06b6d4",
-              borderRadius: "10px",
+              background:
+                "#1e293b",
+              border:
+                "1px solid #06b6d4",
+              borderRadius:
+                "10px",
               color: "white",
               fontSize: "16px",
             }}
@@ -91,24 +167,34 @@ function BrowserMonitor() {
 
           <button
             onClick={handleScan}
+
+            disabled={loading}
+
             style={{
-              background: "#06b6d4",
+              background:
+                "#06b6d4",
               color: "black",
               border: "none",
-              padding: "15px 25px",
-              borderRadius: "10px",
-              fontWeight: "bold",
-              cursor: "pointer",
+              padding:
+                "15px 25px",
+              borderRadius:
+                "10px",
+              fontWeight:
+                "bold",
+              cursor:
+                "pointer",
             }}
           >
-            {loading ? "Scanning..." : "Scan URL"}
+            {loading
+              ? "Scanning..."
+              : "Scan URL"}
           </button>
 
         </div>
 
       </div>
 
-      {/* RESULTS */}
+      {/* RESULT */}
       {scanResult && (
 
         <div
@@ -116,14 +202,21 @@ function BrowserMonitor() {
             background: "#111827",
             padding: "25px",
             borderRadius: "20px",
-            border: "1px solid #06b6d4",
+            border:
+              `2px solid ${getThreatColor(
+                scanResult.threatLevel
+              )}`,
           }}
         >
 
           <h2
             style={{
-              color: "#06b6d4",
-              marginBottom: "20px",
+              color:
+                getThreatColor(
+                  scanResult.threatLevel
+                ),
+              marginBottom:
+                "20px",
             }}
           >
             Threat Analysis Results
@@ -131,62 +224,68 @@ function BrowserMonitor() {
 
           <div
             style={{
-              background: "#1e293b",
-              padding: "20px",
-              borderRadius: "12px",
-              marginBottom: "15px",
+              background:
+                "#1e293b",
+              padding: "25px",
+              borderRadius:
+                "12px",
             }}
           >
 
-            <h3>URL Scan Completed</h3>
-
-            <p>
-              Real-time cybersecurity intelligence analysis
-              performed using VirusTotal API.
-            </p>
-
-            <p
+            <h1
               style={{
-                color: "#22c55e",
-                fontWeight: "bold",
+                color:
+                  getThreatColor(
+                    scanResult.threatLevel
+                  ),
+                fontSize: "45px",
               }}
             >
-              Status: Successfully Analyzed
-            </p>
-
-          </div>
-
-          <div
-            style={{
-              background: "#1e293b",
-              padding: "20px",
-              borderRadius: "12px",
-            }}
-          >
-
-            <h3>AI Threat Intelligence</h3>
+              {
+                scanResult.threatLevel
+              }
+            </h1>
 
             <p>
-              ✔ URL submitted to global threat intelligence
-              engine.
+              <strong>
+                URL:
+              </strong>
+              <br />
+              {
+                scanResult.url
+              }
             </p>
 
             <p>
-              ✔ Domain reputation analyzed.
+              <strong>
+                Malicious Engines:
+              </strong>{" "}
+              {
+                scanResult.maliciousCount
+              }
             </p>
 
             <p>
-              ✔ Malicious indicators checked.
+              <strong>
+                Suspicious Engines:
+              </strong>{" "}
+              {
+                scanResult.suspiciousCount
+              }
             </p>
 
             <p>
-              ✔ AI cyber analysis completed.
+              <strong>
+                Scan Source:
+              </strong>{" "}
+              {
+                scanResult.scanSource
+              }
             </p>
 
           </div>
 
         </div>
-
       )}
 
     </DashboardLayout>

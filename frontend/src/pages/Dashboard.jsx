@@ -6,32 +6,28 @@ import RiskMeter from "../components/RiskMeter";
 
 import ThreatChart from "../charts/ThreatChart";
 
-import { analyzeRisk } from "../services/riskService";
-
 import LiveThreatFeed
 from "../components/LiveThreatFeed";
 
 import SystemStatus
 from "../components/SystemStatus";
 
+import ThreatAlert
+from "../components/ThreatAlert";
 
 import {
   getDashboardStats,
 } from "../services/analyticsService";
 
-import {
-  getRecommendations,
-} from "../services/recommendationService";
-
-import ThreatAlert
-from "../components/ThreatAlert";
-
-
-
 function Dashboard() {
 
   const [riskData, setRiskData] =
-    useState(null);
+    useState({
+
+      score: 0,
+
+      riskLevel: "SAFE",
+    });
 
   const [analytics, setAnalytics] =
     useState(null);
@@ -40,52 +36,35 @@ function Dashboard() {
     setRecommendations] =
     useState([]);
 
+  // FETCH DASHBOARD DATA
   useEffect(() => {
-
-    fetchRiskAnalysis();
 
     fetchAnalytics();
 
+    // AUTO REFRESH
+    const interval =
+      setInterval(() => {
+
+        fetchAnalytics();
+
+      }, 5000);
+
+    return () =>
+      clearInterval(interval);
+
   }, []);
 
-  // FETCH AI RISK
-  const fetchRiskAnalysis = async () => {
+  // GENERATE AI RISK
+  useEffect(() => {
 
-    try {
+    if (analytics) {
 
-      const response = await analyzeRisk({
-        breachCount: 3,
-        maliciousUrls: 2,
-        phishingAttempts: 4,
-        darkWebExposure: 1,
-      });
-
-      setRiskData(response.riskAnalysis);
-
-      // FETCH AI RECOMMENDATIONS
-      const recommendationResponse =
-        await getRecommendations({
-
-          riskLevel:
-            response.riskAnalysis.riskLevel,
-
-          maliciousCount: 2,
-
-          suspiciousCount: 3,
-        });
-
-      setRecommendations(
-        recommendationResponse
-          .recommendations
-      );
-
-    } catch (error) {
-
-      console.log(error);
+      generateRiskData();
     }
-  };
 
-  // FETCH ANALYTICS
+  }, [analytics]);
+
+  // FETCH DATA
   const fetchAnalytics = async () => {
 
     try {
@@ -93,12 +72,205 @@ function Dashboard() {
       const response =
         await getDashboardStats();
 
-      setAnalytics(response.analytics);
+      if (
+        response.success
+      ) {
+
+        setAnalytics(
+          response.analytics
+        );
+      }
 
     } catch (error) {
 
-      console.log(error);
+      console.log(
+        "Dashboard Error:",
+        error
+      );
     }
+  };
+
+  // AI RISK ENGINE
+  const generateRiskData = () => {
+
+    const totalScans =
+      analytics?.totalScans || 0;
+
+    const dangerousCount =
+      analytics?.dangerousCount || 0;
+
+    const suspiciousCount =
+      analytics?.suspiciousCount || 0;
+
+    const criticalCount =
+      analytics?.criticalCount || 0;
+
+    const totalThreats =
+
+      dangerousCount +
+
+      suspiciousCount +
+
+      criticalCount;
+
+    // REAL RISK SCORE
+    let score = 0;
+
+    if (totalScans > 0) {
+
+      score = Math.floor(
+
+        (totalThreats / totalScans) * 100
+      );
+    }
+
+    // MAX 100
+    if (score > 100) {
+
+      score = 100;
+    }
+
+    // RISK LEVEL
+    let riskLevel = "SAFE";
+
+    if (score >= 70) {
+
+      riskLevel =
+        "CRITICAL";
+    }
+
+    else if (
+      score >= 40
+    ) {
+
+      riskLevel =
+        "HIGH";
+    }
+
+    else if (
+      score >= 20
+    ) {
+
+      riskLevel =
+        "MEDIUM";
+    }
+
+    else if (
+      score >= 1
+    ) {
+
+      riskLevel =
+        "LOW";
+    }
+
+    setRiskData({
+
+      score,
+
+      riskLevel,
+    });
+
+    // AI RECOMMENDATIONS
+    let aiRecommendations = [];
+
+    if (riskLevel === "SAFE") {
+
+      aiRecommendations = [
+
+        "System security stable.",
+
+        "No malicious activity detected.",
+
+        "Continue secure browsing.",
+      ];
+    }
+
+    else if (
+      riskLevel === "LOW"
+    ) {
+
+      aiRecommendations = [
+
+        "Avoid suspicious websites.",
+
+        "Enable browser protection.",
+
+        "Keep software updated.",
+      ];
+    }
+
+    else if (
+      riskLevel === "MEDIUM"
+    ) {
+
+      aiRecommendations = [
+
+        "Enable Two-Factor Authentication.",
+
+        "Monitor account activity.",
+
+        "Avoid unknown downloads.",
+      ];
+    }
+
+    else if (
+      riskLevel === "HIGH"
+    ) {
+
+      aiRecommendations = [
+
+        "Change passwords immediately.",
+
+        "Run antivirus scan.",
+
+        "Monitor banking activity.",
+      ];
+    }
+
+    else {
+
+      aiRecommendations = [
+
+        "Critical cyber threat detected.",
+
+        "Disconnect suspicious extensions.",
+
+        "Full malware scan required.",
+      ];
+    }
+
+    setRecommendations(
+      aiRecommendations
+    );
+  };
+
+  // THREAT COLOR
+  const getThreatColor = (
+    level
+  ) => {
+
+    if (
+      level === "CRITICAL"
+    ) {
+
+      return "#ef4444";
+    }
+
+    if (
+      level === "DANGEROUS"
+    ) {
+
+      return "#f97316";
+    }
+
+    if (
+      level === "SUSPICIOUS"
+    ) {
+
+      return "#facc15";
+    }
+
+    return "#22c55e";
   };
 
   return (
@@ -132,30 +304,28 @@ function Dashboard() {
             background: "#1e293b",
             padding: "25px",
             borderRadius: "20px",
-            border: "1px solid #ef4444",
-            boxShadow:
-              "0 0 15px rgba(239,68,68,0.3)",
+            border:
+              "1px solid #ef4444",
           }}
         >
 
-          <h2>Cyber Risk Score</h2>
+          <h2>
+            Cyber Risk Score
+          </h2>
 
           <h1
             style={{
               color: "#ef4444",
               fontSize: "55px",
-              margin: 0,
             }}
           >
-            {riskData
-              ? riskData.score
-              : "..."}%
+            {riskData.score}%
           </h1>
 
           <p>
-            {riskData
-              ? riskData.riskLevel
-              : "Analyzing"}
+            {
+              riskData.riskLevel
+            }
           </p>
 
         </div>
@@ -166,57 +336,61 @@ function Dashboard() {
             background: "#1e293b",
             padding: "25px",
             borderRadius: "20px",
-            border: "1px solid #facc15",
-            boxShadow:
-              "0 0 15px rgba(250,204,21,0.3)",
+            border:
+              "1px solid #facc15",
           }}
         >
 
-          <h2>Total Threat Scans</h2>
+          <h2>
+            Total Threat Scans
+          </h2>
 
           <h1
             style={{
               color: "#facc15",
               fontSize: "55px",
-              margin: 0,
             }}
           >
-            {analytics
-              ? analytics.totalScans
-              : "..."}
+            {
+              analytics?.totalScans || 0
+            }
           </h1>
 
-          <p>Threat Intelligence Records</p>
+          <p>
+            Total URL Scan Records
+          </p>
 
         </div>
 
-        {/* SUSPICIOUS */}
+        {/* THREATS */}
         <div
           style={{
             background: "#1e293b",
             padding: "25px",
             borderRadius: "20px",
-            border: "1px solid #06b6d4",
-            boxShadow:
-              "0 0 15px rgba(6,182,212,0.3)",
+            border:
+              "1px solid #06b6d4",
           }}
         >
 
-          <h2>Suspicious Threats</h2>
+          <h2>
+            Threat Detections
+          </h2>
 
           <h1
             style={{
               color: "#06b6d4",
               fontSize: "55px",
-              margin: 0,
             }}
           >
-            {analytics
-              ? analytics.suspiciousCount
-              : "..."}
+            {
+              analytics?.totalThreats || 0
+            }
           </h1>
 
-          <p>Potential Threat Activity</p>
+          <p>
+            Dangerous & Suspicious URLs
+          </p>
 
         </div>
 
@@ -229,7 +403,8 @@ function Dashboard() {
           background: "#111827",
           padding: "25px",
           borderRadius: "20px",
-          border: "1px solid #06b6d4",
+          border:
+            "1px solid #06b6d4",
         }}
       >
 
@@ -242,59 +417,62 @@ function Dashboard() {
           AI Cyber Intelligence
         </h2>
 
-        <div style={{ lineHeight: "2" }}>
+        <div
+          style={{
+            lineHeight: "2",
+          }}
+        >
 
           <p>
-            ✔ AI risk analysis completed successfully.
+            ✔ AI monitoring active.
           </p>
 
           <p>
-            ✔ Real-time cybersecurity monitoring active.
+            ✔ Threat detection operational.
           </p>
 
           <p>
-            ✔ Threat exposure patterns detected.
+            ✔ Browser monitoring enabled.
           </p>
 
           <p>
-            ✔ Malicious website analytics generated.
+            ✔ Real-time analytics generated.
           </p>
 
           <p>
-            ✔ Risk classification:
-            {" "}
+
+            ✔ Current Risk:
+
             <span
               style={{
+                marginLeft: "10px",
                 color:
-                  riskData?.riskLevel ===
-                  "CRITICAL"
-                    ? "#ef4444"
-                    : riskData?.riskLevel ===
-                      "HIGH"
-                    ? "#f97316"
-                    : "#22c55e",
-
+                  getThreatColor(
+                    riskData.riskLevel
+                  ),
                 fontWeight: "bold",
               }}
             >
-              {riskData
-                ? riskData.riskLevel
-                : "Loading"}
+              {
+                riskData.riskLevel
+              }
             </span>
+
           </p>
 
         </div>
 
       </div>
 
-      {/* AI RECOMMENDATIONS */}
+      {/* RECOMMENDATIONS */}
       <div
         style={{
           marginTop: "30px",
           background: "#111827",
           padding: "25px",
           borderRadius: "20px",
-          border: "1px solid #06b6d4",
+          border:
+            "1px solid #06b6d4",
         }}
       >
 
@@ -308,37 +486,32 @@ function Dashboard() {
         </h2>
 
         {recommendations.map(
-          (recommendation, index) => (
+
+          (
+            recommendation,
+            index
+          ) => (
 
             <div
               key={index}
               style={{
-                background: "#1e293b",
+                background:
+                  "#1e293b",
                 padding: "15px",
-                borderRadius: "12px",
-                marginBottom: "15px",
-                borderLeft:
-                  "5px solid #06b6d4",
+                borderRadius:
+                  "12px",
+                marginBottom:
+                  "15px",
               }}
             >
-
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "16px",
-                }}
-              >
-                ✔ {recommendation}
-              </p>
-
+              ✔ {recommendation}
             </div>
-
           )
         )}
 
       </div>
 
-      {/* ANALYTICS */}
+      {/* CHARTS */}
       <div
         style={{
           marginTop: "30px",
@@ -349,9 +522,18 @@ function Dashboard() {
         }}
       >
 
-        <RiskMeter />
+        <RiskMeter
+          score={
+            riskData.score
+          }
+          riskLevel={
+            riskData.riskLevel
+          }
+        />
 
-        <ThreatChart />
+        <ThreatChart
+          analytics={analytics}
+        />
 
       </div>
 
@@ -362,7 +544,8 @@ function Dashboard() {
           background: "#111827",
           padding: "25px",
           borderRadius: "20px",
-          border: "1px solid #06b6d4",
+          border:
+            "1px solid #06b6d4",
         }}
       >
 
@@ -375,77 +558,111 @@ function Dashboard() {
           Recent Threat Activity
         </h2>
 
-        {analytics &&
+        {analytics?.recentScans
+          ?.length > 0 ? (
+
           analytics.recentScans.map(
-            (scan, index) => (
+
+            (
+              scan,
+              index
+            ) => (
 
               <div
                 key={index}
                 style={{
-                  background: "#1e293b",
+                  background:
+                    "#1e293b",
                   padding: "20px",
-                  borderRadius: "12px",
-                  marginBottom: "15px",
+                  borderRadius:
+                    "12px",
+                  marginBottom:
+                    "15px",
                 }}
               >
 
-                <h3>{scan.url}</h3>
+                <h3>
+                  {scan.url}
+                </h3>
 
                 <p>
+
                   Threat Level:
-                  {" "}
+
                   <span
                     style={{
+                      marginLeft:
+                        "10px",
                       color:
-                        scan.threatLevel ===
-                        "CRITICAL"
-                          ? "#ef4444"
-                          : scan.threatLevel ===
-                            "DANGEROUS"
-                          ? "#f97316"
-                          : scan.threatLevel ===
-                            "SUSPICIOUS"
-                          ? "#facc15"
-                          : "#22c55e",
-
-                      fontWeight: "bold",
+                        getThreatColor(
+                          scan.threatLevel
+                        ),
+                      fontWeight:
+                        "bold",
                     }}
                   >
-                    {scan.threatLevel}
+                    {
+                      scan.threatLevel
+                    }
                   </span>
+
                 </p>
 
                 <p>
-                  Malicious Engines:
+                  User:
                   {" "}
-                  {scan.maliciousCount}
+                  {
+                    scan.userEmail
+                  }
                 </p>
 
                 <p>
-                  Suspicious Engines:
+                  Malicious:
                   {" "}
-                  {scan.suspiciousCount}
+                  {
+                    scan.maliciousCount
+                  }
+                </p>
+
+                <p>
+                  Suspicious:
+                  {" "}
+                  {
+                    scan.suspiciousCount
+                  }
                 </p>
 
               </div>
-
             )
-          )}
+          )
+
+        ) : (
+
+          <p>
+            No Recent Scan Data
+          </p>
+        )}
 
       </div>
+
+      {/* ALERT */}
       <ThreatAlert
-  threatLevel={
-    riskData?.riskLevel
-  }
-/>
+        threatLevel={
+          riskData.riskLevel
+        }
+      />
 
-<LiveThreatFeed />
+      {/* LIVE FEED */}
+      <LiveThreatFeed
+        liveThreats={
+          analytics?.liveThreats || []
+        }
+      />
 
-<SystemStatus />
+      {/* SYSTEM STATUS */}
+      <SystemStatus />
 
     </DashboardLayout>
-
-    
   );
 }
 
